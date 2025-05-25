@@ -125,6 +125,7 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
+            console.log('DOM loaded');
             // Game elements
             const gameArea = document.getElementById('game-area');
             const basket = document.getElementById('basket');
@@ -139,6 +140,8 @@
             const finalScoreDisplay = document.getElementById('final-score');
             const finalHighScoreDisplay = document.getElementById('final-high-score');
             const finalLevelDisplay = document.getElementById('final-level');
+
+            if (!startBtn) console.error('Start button not found');
 
             // Configuration
             const config = {
@@ -173,11 +176,11 @@
             let objectSpeed = config.initialObjectSpeed;
             let spawnRate = config.initialSpawnRate;
 
-            // Audio
-           // const fruitSound = new Audio('fruit-catch.mp3');
-           // const bombSound = new Audio('bomb-explosion.mp3');
-           // const gameStartSound = new Audio('game-start.mp3');
-            //const gameOverSound = new Audio('game-over.mp3');
+            // Audio (temporarily disabled for debugging)
+            // const fruitSound = new Audio('/fruit-catch.mp3');
+            // const bombSound = new Audio('/bomb-explosion.mp3');
+            // const gameStartSound = new Audio('/game-start.mp3');
+            // const gameOverSound = new Audio('/game-over.mp3');
 
             // Fruits, bombs, and special items
             const fruits = [
@@ -213,6 +216,7 @@
 
             // Initialize game
             function initGame() {
+                console.log('Initializing game');
                 score = 0;
                 lives = config.maxLives;
                 level = 1;
@@ -226,35 +230,29 @@
                 basket.style.left = `${basketPosition}px`;
                 gameArea.className = `relative ${config.backgroundColors[0]} rounded-xl border-4 border-blue-400 h-96 w-full overflow-hidden`;
 
-                // Clear existing objects
                 fallingObjects.forEach(obj => returnObjectToPool(obj.element));
                 fallingObjects = [];
 
-                // Clear intervals
                 clearInterval(objectInterval);
                 clearInterval(speedInterval);
             }
 
             // Start game
             function startGame() {
+                console.log('Starting game...');
                 initGame();
                 gameRunning = true;
                 startScreen.classList.add('hidden');
                 gameOverScreen.classList.add('hidden');
-                gameStartSound.play();
-
-                // Start spawning objects
+                // gameStartSound.play();
                 objectInterval = setInterval(createFallingObject, spawnRate);
-
-                // Gradually increase difficulty
                 speedInterval = setInterval(() => {
+                    console.log('Level up:', level + 1);
                     level++;
                     levelDisplay.textContent = level;
                     objectSpeed += 0.5;
                     spawnRate = Math.max(config.minSpawnRate, spawnRate - 100);
                     gameArea.className = `relative ${config.backgroundColors[(level - 1) % config.backgroundColors.length]} rounded-xl border-4 border-blue-400 h-96 w-full overflow-hidden`;
-
-                    // Reset interval with new spawn rate
                     clearInterval(objectInterval);
                     objectInterval = setInterval(createFallingObject, spawnRate);
                 }, config.levelUpInterval);
@@ -262,6 +260,7 @@
 
             // Game over
             function endGame() {
+                console.log('Game over');
                 gameRunning = false;
                 clearInterval(objectInterval);
                 clearInterval(speedInterval);
@@ -274,14 +273,14 @@
                 finalHighScoreDisplay.textContent = highScore;
                 finalLevelDisplay.textContent = level;
                 gameOverScreen.classList.remove('hidden');
-                gameOverSound.play();
+                // gameOverSound.play();
             }
 
             // Create falling objects
             function createFallingObject() {
                 if (!gameRunning) return;
+                console.log('Creating falling object');
 
-                // 20% bomb, 5% special, 75% fruit
                 const rand = Math.random();
                 let objectType;
                 if (rand < 0.2) {
@@ -296,7 +295,6 @@
                 object.className = `game-object text-3xl flex items-center justify-center rounded-full w-12 h-12 ${objectType.color}`;
                 object.textContent = objectType.emoji;
 
-                // Random horizontal position
                 const xPos = Math.random() * (gameAreaWidth - 50);
                 object.style.left = `${xPos}px`;
                 object.style.top = '-50px';
@@ -326,7 +324,6 @@
                     obj.y += obj.speed;
                     obj.element.style.top = `${obj.y}px`;
 
-                    // Check if object is caught by basket
                     if (
                         obj.y + obj.height >= gameAreaHeight - 80 &&
                         obj.y <= gameAreaHeight - 40 &&
@@ -334,12 +331,10 @@
                         obj.x <= basketPosition + basketWidth
                     ) {
                         if (obj.penalty) {
-                            // Bomb
                             lives -= obj.penalty;
                             livesDisplay.textContent = '❤️'.repeat(Math.max(0, lives)) + '♡'.repeat(Math.max(0, config.maxLives - lives));
-                            bombSound.play();
+                            // bombSound.play();
 
-                            // Explosion effect
                             const explosion = getObjectFromPool();
                             explosion.className = 'explosion';
                             explosion.style.left = `${obj.x + obj.width/2 - 15}px`;
@@ -350,7 +345,6 @@
 
                             setTimeout(() => returnObjectToPool(explosion), 500);
 
-                            // Shake basket
                             basket.classList.add('shake');
                             setTimeout(() => basket.classList.remove('shake'), 500);
 
@@ -358,17 +352,14 @@
                                 endGame();
                             }
                         } else if (obj.extraLife) {
-                            // Special item (extra life)
                             lives = Math.min(config.maxLives, lives + obj.extraLife);
                             livesDisplay.textContent = '❤️'.repeat(lives) + '♡'.repeat(config.maxLives - lives);
-                            fruitSound.play();
+                            // fruitSound.play();
                         } else {
-                            // Fruit
                             score += obj.value;
                             scoreDisplay.textContent = score;
-                            fruitSound.play();
+                            // fruitSound.play();
 
-                            // Floating score effect
                             const scoreEffect = getObjectFromPool();
                             scoreEffect.className = 'absolute text-yellow-300 font-bold text-xl';
                             scoreEffect.textContent = `+${obj.value}`;
@@ -388,7 +379,6 @@
                         fallingObjects.splice(index, 1);
                     }
 
-                    // Remove object if it falls past the bottom
                     if (obj.y > gameAreaHeight) {
                         returnObjectToPool(obj.element);
                         fallingObjects.splice(index, 1);
@@ -423,22 +413,24 @@
             }
 
             // Resize handling
-            const resizeObserver = new ResizeObserver(() => {
-                gameAreaWidth = gameArea.offsetWidth;
-                basketWidth = basket.offsetWidth;
-                basketPosition = Math.min(basketPosition, gameAreaWidth - basketWidth);
-                basket.style.left = `${basketPosition}px`;
-                gameAreaHeight = gameArea.offsetHeight;
-            });
-            resizeObserver.observe(gameArea);
+            // const resizeObserver = new ResizeObserver(() => {
+            //     gameAreaWidth = gameArea.offsetWidth;
+            //     basketWidth = basket.offsetWidth;
+            //     basketPosition = Math.min(basketPosition, gameAreaWidth - basketWidth);
+            //     basket.style.left = `${basketPosition}px`;
+            //     gameAreaHeight = gameArea.offsetHeight;
+            // });
+            // resizeObserver.observe(gameArea);
 
             // Event listeners
             startBtn.addEventListener('click', () => {
+                console.log('Start button clicked');
                 startGame();
                 updateGame();
             });
 
             restartBtn.addEventListener('click', () => {
+                console.log('Restart button clicked');
                 startGame();
                 updateGame();
             });
